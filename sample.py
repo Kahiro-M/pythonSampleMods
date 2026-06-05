@@ -1,8 +1,9 @@
 import os
 from pathlib import Path
-import shutil
 import argparse
 import sys
+from file_size import get_file_size_str,get_file_size
+from mkdir_datetime import mkdir_dt,get_today_date,get_now_time
 
 # 標準出力をUTF-8に再設定（Windows環境での文字化け対策）
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -32,25 +33,26 @@ class _Tee:
     def __getattr__(self, name):
         return getattr(self._stream, name)
     
-# スクリプトと同階層のffmpegを使用
-_BASE_DIR = Path(__file__).parent
-
 # ──────────────────────────────────────────
 # 実行
 # ──────────────────────────────────────────
 def main():
-    args = doArgParse()
+    args = do_arg_parse()
+    dbg_dir_path = None
     
     # デバッグモードの場合、標準出力をファイルにも保存するためのクラス
     if args['debug']:
         import sys
-        log_path = os.path.splitext(os.path.abspath(args['output']))[0] + "_debug.log"
+        dbg_dir_path = Path(mkdir_dt())  # デバッグ用にフォルダ作成
+        log_path = dbg_dir_path / (Path(args['output']).stem + "_debug.log")
         _tee = _Tee(sys.stdout, log_path)  # reconfigure もここで完結
         sys.stdout = _tee
+        print(f'デバッグモードが有効です。 {dbg_dir_path} に保存されます。')
 
     print('====== args sample ======')
     print('                  v.0.0.1')
     print(f'指定された引数: {args}')
+    print('実行日時: ' + get_today_date() + ' ' + get_now_time())
     print('ファイル存在チェック:')
     for key, value in args.items():
         if isinstance(value, str) and value.endswith(('.csv', '.CSV')):
@@ -58,10 +60,23 @@ def main():
                 print(f'  - {key}: {value} が存在しません')
             else:
                 print(f'  - {key}: {value} が存在します')
+                print(f'    ファイルサイズ(KB): {get_file_size(value)}')
+                print(f'    ファイルサイズ(文字列): {get_file_size_str(value)}')
 
+    if args['debug']:
+        print('--- デバッグモード')
+        save_ini('config.ini', args)  # デバッグ用に現在の設定値をiniとして保存
+        for key, value in args.items():
+            if isinstance(value, str) and value.endswith(('.csv', '.CSV')):
+                if os.path.exists(value):
+                    # デバッグ用にファイルをコピー
+                    import shutil
+                    dest_path = dbg_dir_path / os.path.basename(value)
+                    shutil.copy2(value, dest_path)
+                    print(f'  - {key}: {value} を {dest_path} にコピーしました。')
 
 # 相対パス取得
-def getRelativePath(filePath):
+def get_relative_path(filePath):
     from pathlib import Path
     if(Path(filePath).is_absolute()):
         return Path(filePath).relative_to(Path.cwd())
@@ -69,7 +84,7 @@ def getRelativePath(filePath):
         return filePath
 
 # 絶対パス取得
-def getAbsolutePath(filePath):
+def get_absolute_path(filePath):
     from pathlib import Path
     if(Path(filePath).is_absolute()):
         return filePath
@@ -77,7 +92,7 @@ def getAbsolutePath(filePath):
         return Path(filePath).resolve()
 
 # 引数解析
-def doArgParse() -> dict:
+def do_arg_parse() -> dict:
     parser = build_parser(ARG_DESCRIPTION)
     args = parser.parse_args()
     arg_dict = vars(args)

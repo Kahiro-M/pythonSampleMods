@@ -1,0 +1,7 @@
+[settings]
+file = input.csv
+output = output.csv
+enc = CP932
+column = 3
+debug = true
+
