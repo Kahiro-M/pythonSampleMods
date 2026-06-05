@@ -65,7 +65,7 @@ def main():
 
     if args['debug']:
         print('--- デバッグモード')
-        save_ini('config.ini', args)  # デバッグ用に現在の設定値をiniとして保存
+        save_ini(dbg_dir_path / 'config.ini', args)  # デバッグ用に現在の設定値をiniとして保存
         for key, value in args.items():
             if isinstance(value, str) and value.endswith(('.csv', '.CSV')):
                 if os.path.exists(value):
@@ -140,7 +140,7 @@ def build_parser(desc=ARG_DESCRIPTION) -> argparse.ArgumentParser:
 
     for opt in OPTION_DEFS:
         if opt['store_true']:
-            parser.add_argument(f'--{opt["name"]}', action='store_true', default=None, help=opt['help'])
+            parser.add_argument(f'--{opt["name"]}', action=argparse.BooleanOptionalAction, default=None, help=opt['help'])
         else:
             parser.add_argument(f'--{opt["name"]}', type=opt['type'], default=None, help=opt['help'])
 
