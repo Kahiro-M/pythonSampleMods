@@ -52,24 +52,24 @@ def main():
         log_path = dbg_dir_path / (Path(args['output']).stem + "_debug.log")
         _tee = _Tee(sys.stdout, log_path)  # reconfigure もここで完結
         sys.stdout = _tee
-        print(f'デバッグモードが有効です。 {dbg_dir_path} に保存されます。')
+        print(f'デバッグモードが有効です。 {dbg_dir_path} に保存されます。', flush=True)
 
-    print('====== args sample ======')
-    print('                  v.0.0.1')
-    print(f'指定された引数: {args}')
-    print('実行日時: ' + get_today_date() + ' ' + get_now_time())
-    print('ファイル存在チェック:')
+    print('====== args sample ======', flush=True)
+    print('                  v.0.0.1', flush=True)
+    print(f'指定された引数: {args}', flush=True)
+    print('実行日時: ' + get_today_date() + ' ' + get_now_time(), flush=True)
+    print('ファイル存在チェック:', flush=True)
     for key, value in args.items():
         if isinstance(value, str) and value.endswith(('.csv', '.CSV')):
             if not os.path.exists(value):
-                print(f'  - {key}: {value} が存在しません')
+                print(f'  - {key}: {value} が存在しません', flush=True)
             else:
-                print(f'  - {key}: {value} が存在します')
-                print(f'    ファイルサイズ(KB): {get_file_size(value)}')
-                print(f'    ファイルサイズ(文字列): {get_file_size_str(value)}')
+                print(f'  - {key}: {value} が存在します', flush=True)
+                print(f'    ファイルサイズ(KB): {get_file_size(value)}', flush=True)
+                print(f'    ファイルサイズ(文字列): {get_file_size_str(value)}', flush=True)
 
     if args['debug']:
-        print('--- デバッグモード')
+        print('--- デバッグモード', flush=True)
         save_ini(dbg_dir_path / 'config.ini', args)  # デバッグ用に現在の設定値をiniとして保存
         for key, value in args.items():
             if isinstance(value, str) and value.endswith(('.csv', '.CSV')):
@@ -78,7 +78,7 @@ def main():
                     import shutil
                     dest_path = dbg_dir_path / os.path.basename(value)
                     shutil.copy2(value, dest_path)
-                    print(f'  - {key}: {value} を {dest_path} にコピーしました。')
+                    print(f'  - {key}: {value} を {dest_path} にコピーしました。', flush=True)
 
 # 相対パス取得
 def get_relative_path(filePath):
