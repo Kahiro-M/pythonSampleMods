@@ -2,6 +2,8 @@
 file = input.csv
 output = output.csv
 enc = CP932
+token = XXXXXX...
+method = GET
 column = 3
 debug = true
 
