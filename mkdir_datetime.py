@@ -2,6 +2,8 @@
 import datetime as dt
 #フォルダの存在確認
 import os
+#ファイルパスの操作
+from pathlib import Path
 
 #------------------------------------------------#
 # 現在時刻のフォルダ作成
@@ -10,11 +12,11 @@ def mkdir_dt(folder_start='',folder_end=''):
     dt_now = dt.datetime.now()
     timestamp_str = dt_now.strftime('%Y%m%d_%H%M_%S')
     # 現在のフォルダパス
-    currentDir = os.getcwd()
+    currentDir = Path.cwd()
     # 作成フォルダ名
     resultDirName = folder_start + timestamp_str + folder_end
     # フォルダのフルパス
-    resultDirFullPath = currentDir + '\\' + resultDirName
+    resultDirFullPath = currentDir / resultDirName
 
     if(not (os.path.exists(resultDirFullPath))):
         os.mkdir(resultDirFullPath)
