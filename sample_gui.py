@@ -8,8 +8,7 @@ import os
 # ──────────────
 # オプション定義
 # ──────────────
-from external_define import OPTION_DEFS, CONFIG_DEFAULT
-
+from external_define import OPTION_DEFS, CONFIG_DEFAULT, FILE_KEYWORDS, PROGRAM_TITLE, PROGRAM_FILE_NAME
 
 
 # -----------------------------------------------------------------------
@@ -30,7 +29,7 @@ def _get_launcher_dir() -> str:
         return os.path.dirname(sys.executable)
     # 通常実行時 → スクリプトのあるフォルダ
     return os.path.dirname(os.path.abspath(__file__))
-SCRIPT_PATH = os.path.join(_get_launcher_dir(), "sample.py")
+SCRIPT_PATH = os.path.join(_get_launcher_dir(), f"{PROGRAM_FILE_NAME}.py")
 
 # -----------------------------------------------------------------------
 # 定数
@@ -49,10 +48,10 @@ def _decode_auto(raw: bytes) -> str:
 # -----------------------------------------------------------------------
 # GUI本体
 # -----------------------------------------------------------------------
-class sampleGUI(tk.Tk):
+class mainGUI(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("sample GUI")
+        self.title(f"{PROGRAM_TITLE} GUI")
         # self.iconbitmap(os.path.join(_get_base_dir(), "icon.ico"))
         self.resizable(True, True)
         self.minsize(620, 700)
@@ -78,8 +77,6 @@ class sampleGUI(tk.Tk):
     # -------------------------------------------------------------------
     def _build_ui(self):
         pad = {"padx": 10, "pady": 4}
-        # ファイル参照が必要なキーワード
-        FILE_KEYWORDS = ("file", "img", "image", "path", "output")
 
         # frame名の順序を保ちながらグループ化
         from collections import OrderedDict
@@ -97,6 +94,7 @@ class sampleGUI(tk.Tk):
             for opt in opts:
                 name  = opt["name"]
                 label = opt["help"] or name
+                width = opt.get("width", None)
                 var   = self._vars[name]
 
                 if opt["store_true"] or opt["type"] == bool:
@@ -104,14 +102,28 @@ class sampleGUI(tk.Tk):
                         row=row, column=0, columnspan=3, sticky="w", pady=3, padx=4)
 
                 elif opt["type"] == int:
+                    # 数値入力行
+                    if width is None:
+                        width = 10
                     ttk.Label(lf, text=label).grid(row=row, column=0, sticky="w", pady=3)
                     ttk.Spinbox(lf, from_=0, to=99999, increment=1,
-                                textvariable=var, width=10).grid(
+                                textvariable=var, width=width).grid(
                         row=row, column=1, sticky="w", padx=6)
 
-                elif any(kw in name.lower() for kw in FILE_KEYWORDS):
+                elif opt.get("choices"):
+                    # ドロップダウン
+                    if width is None:
+                        width = 20
                     ttk.Label(lf, text=label).grid(row=row, column=0, sticky="w", pady=3)
-                    ttk.Entry(lf, textvariable=var, width=40).grid(
+                    cb = ttk.Combobox(lf, textvariable=var, values=opt['choices'], width=width, state="normal")
+                    cb.grid(row=row, column=1, sticky="w", padx=6)
+
+                elif any(kw in name.lower() for kw in FILE_KEYWORDS):
+                    # ファイルパス入力行
+                    if width is None:
+                        width = 40
+                    ttk.Label(lf, text=label).grid(row=row, column=0, sticky="w", pady=3)
+                    ttk.Entry(lf, textvariable=var, width=width).grid(
                         row=row, column=1, sticky="ew", padx=6)
                     ttk.Button(lf, text="参照…", width=7,
                             command=lambda n=name: self._browse_file(n)).grid(
@@ -119,8 +131,11 @@ class sampleGUI(tk.Tk):
                     lf.columnconfigure(1, weight=1)
 
                 else:
+                    # 通常のテキスト入力
+                    if width is None:
+                        width = 20
                     ttk.Label(lf, text=label).grid(row=row, column=0, sticky="w", pady=3)
-                    ttk.Entry(lf, textvariable=var, width=20).grid(
+                    ttk.Entry(lf, textvariable=var, width=width).grid(
                         row=row, column=1, sticky="w", padx=6)
 
                 row += 1
@@ -257,16 +272,16 @@ class sampleGUI(tk.Tk):
     # コマンド構築
     def _build_command(self) -> list[str]:
         base_dir = _get_launcher_dir()
-        # sample.exe → sample.py の順で探す
-        exe_path = os.path.join(base_dir, "sample.exe")
-        py_path  = os.path.join(base_dir, "sample.py")
+        # {PROGRAM_FILE_NAME}.exe → {PROGRAM_FILE_NAME}.py の順で探す
+        exe_path = os.path.join(base_dir, f"{PROGRAM_FILE_NAME}.exe")
+        py_path  = os.path.join(base_dir, f"{PROGRAM_FILE_NAME}.py")
 
         if os.path.exists(exe_path):
             cmd = [exe_path]
         elif os.path.exists(py_path):
             cmd = [sys.executable, py_path]
         else:
-            raise FileNotFoundError(f"sample が見つかりません: {base_dir}")
+            raise FileNotFoundError(f"{PROGRAM_FILE_NAME} が見つかりません: {base_dir}")
 
         for opt in OPTION_DEFS:
             name = opt["name"]
@@ -309,5 +324,5 @@ class sampleGUI(tk.Tk):
 # エントリーポイント
 # -----------------------------------------------------------------------
 if __name__ == "__main__":
-    app = sampleGUI()
+    app = mainGUI()
     app.mainloop()

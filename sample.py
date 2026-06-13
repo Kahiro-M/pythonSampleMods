@@ -54,7 +54,7 @@ def main():
         sys.stdout = _tee
         print(f'デバッグモードが有効です。 {dbg_dir_path} に保存されます。', flush=True)
 
-    print('====== args sample ======', flush=True)
+    print(f'====== {PROGRAM_TITLE} ======', flush=True)
     print('                  v.0.0.1', flush=True)
     print(f'指定された引数: {args}', flush=True)
     print('実行日時: ' + get_today_date() + ' ' + get_now_time(), flush=True)
@@ -130,7 +130,7 @@ def do_arg_parse() -> dict:
 # ──────────────
 # オプション定義
 # ──────────────
-from external_define import OPTION_DEFS, ARG_DESCRIPTION, CONFIG_DEFAULT
+from external_define import OPTION_DEFS, ARG_DESCRIPTION, CONFIG_DEFAULT, PROGRAM_TITLE
 
 # ──────────────
 # INIファイルの読み書き関数
