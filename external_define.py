@@ -19,14 +19,14 @@ FILE_KEYWORDS = ("file", "img", "image", "path", "output")
 
 # 引数定義
 OPTION_DEFS = [
-    #    name           type       default                required        store_true        frame(GUI用)          width(GUI)  help, choices
-    dict(name='file',   type=str,  default='input.csv',   required=True,  store_true=False, frame='ファイル設定', width=None, help='入力CSVファイルパス'),
-    dict(name='output', type=str,  default='output.csv',  required=True,  store_true=False, frame='ファイル設定', width=None, help='出力CSVファイルパス'),
-    dict(name='enc',    type=str,  default='CP932',       required=False, store_true=False, frame='文字コード',   width=None, help='文字エンコーディング（例: CP932, utf-8）'),
-    dict(name='token',  type=str,  default='XXXXXX...',   required=True,  store_true=False, frame='API',          width=50,   help='APIトークン'),
-    dict(name='method', type=str,  default='GET',         required=True,  store_true=False, frame='API',          width=None, help='HTTPメソッド', choices=['GET','POST','PUT','DELETE']),
-    dict(name='column', type=int,  default=3,             required=False, store_true=False, frame='指定カラム',   width=None, help='処理するカラム番号'),
-    dict(name='debug',  type=bool, default=False,         required=False, store_true=True,  frame='その他',       width=None, help='デバッグモード'),
+    #    name           type       default                required        store_true        frame(GUI用)          width(GUI)  choices(GUI)                           help
+    dict(name='file',   type=str,  default='input.csv',   required=True,  store_true=False, frame='ファイル設定', width=None, choices=None,                          help='入力CSVファイルパス'),
+    dict(name='output', type=str,  default='output.csv',  required=True,  store_true=False, frame='ファイル設定', width=None, choices=None,                          help='出力CSVファイルパス'),
+    dict(name='enc',    type=str,  default='CP932',       required=False, store_true=False, frame='文字コード',   width=None, choices=['CP932','utf-8','utf-8-sig'], help='文字エンコーディング（例: CP932, utf-8）'),
+    dict(name='token',  type=str,  default='XXXXXX...',   required=True,  store_true=False, frame='API',          width=50,   choices=None,                          help='APIトークン'),
+    dict(name='method', type=str,  default='GET',         required=True,  store_true=False, frame='API',          width=None, choices=['GET','POST','PUT','DELETE'], help='HTTPメソッド'),
+    dict(name='column', type=int,  default=3,             required=False, store_true=False, frame='指定カラム',   width=None, choices=None,                          help='処理するカラム番号'),
+    dict(name='debug',  type=bool, default=False,         required=False, store_true=True,  frame='その他',       width=None, choices=None,                          help='デバッグモード'),
 ]
 CONFIG_DEFAULT = "config.ini"
 
