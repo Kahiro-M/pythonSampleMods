@@ -235,6 +235,7 @@ class mainGUI(tk.Tk):
 
     def _run_script(self):
         import platform
+        from sample import main
         cmd = self._build_command()
         self._log(f"コマンド: {' '.join(cmd)}\n{'─'*60}\n")
 
@@ -242,30 +243,21 @@ class mainGUI(tk.Tk):
         if platform.system() == "Windows":
             extra["creationflags"] = subprocess.CREATE_NO_WINDOW
 
-        try:
-            proc = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE, # 標準出力をパイプで受け取る
-                stderr=subprocess.STDOUT, # 標準エラーも標準出力にまとめる
-                bufsize=0, # バイナリ受け取り
-                env={**os.environ, "PYTHONUNBUFFERED": "1"}, # バッファリング無効化
-                **extra, # Windowsでコンソールウィンドウを表示しないオプション
-            )
-            for raw_line in proc.stdout:
-                line = _decode_auto(raw_line)
-                self._log(line)
-            proc.wait()
+        # 標準出力を一時的にGUIのログ関数にリダイレクト
+        old_stdout = sys.stdout
+        sys.stdout = GuiStdout(self._log)
 
-            if proc.returncode == 0:
-                self._log(f"\n{'─'*60}\n✅ 完了しました。\n出力: {self._vars['output'].get()}\n")
-            else:
-                self._log(f"\n{'─'*60}\n❌ エラーで終了しました（終了コード: {proc.returncode}）\n")
+        try:
+            ret = main()
+            print(ret)
 
         except FileNotFoundError:
             self._log(f"\n❌ スクリプトが見つかりません: {SCRIPT_PATH}\n")
         except Exception as e:
             self._log(f"\n❌ 予期しないエラー: {e}\n")
         finally:
+            # 標準出力を元に戻す
+            sys.stdout = old_stdout
             # ボタンをメインスレッドで再有効化
             self.after(0, lambda: self.btn_run.config(state="normal"))
 
@@ -319,6 +311,15 @@ class mainGUI(tk.Tk):
             self.log_area.config(state="disabled")
         self.after(0, _clear)
 
+# CLIのprint() 出力をGUIのログエリアにリアルタイムに流し込むための疑似ストリーム
+class GuiStdout:
+    def __init__(self, log_func):
+        self.log_func = log_func
+    def write(self, text):
+        if text.strip(): # 空行でなければログに追記
+            self.log_func(text + "\n")
+    def flush(self):
+        pass
 
 # -----------------------------------------------------------------------
 # エントリーポイント

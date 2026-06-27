@@ -70,8 +70,11 @@ def main():
 
     if args['debug']:
         print('--- デバッグモード', flush=True)
+        print(f'   - args : {args}', flush=True)
+        print(f'   - dbg_dir_path : {dbg_dir_path}', flush=True)
         save_ini(dbg_dir_path / 'config.ini', args)  # デバッグ用に現在の設定値をiniとして保存
-        for key, value in args.items():
+        for i, (key, value) in enumerate(args.items()):
+            print(f'      {i:03} {key}:{value}',flush=True)
             if isinstance(value, str) and value.endswith(('.csv', '.CSV')):
                 if os.path.exists(value):
                     # デバッグ用にファイルをコピー
@@ -79,6 +82,7 @@ def main():
                     dest_path = dbg_dir_path / os.path.basename(value)
                     shutil.copy2(value, dest_path)
                     print(f'  - {key}: {value} を {dest_path} にコピーしました。', flush=True)
+    return 'end'
 
 # 相対パス取得
 def get_relative_path(filePath):
