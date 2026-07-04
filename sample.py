@@ -43,6 +43,9 @@ class _Tee:
 # ──────────────────────────────────────────
 def main():
     args = do_arg_parse()
+    do(args)
+
+def do(args):    
     dbg_dir_path = None
     
     # デバッグモードの場合、標準出力をファイルにも保存するためのクラス

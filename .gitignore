@@ -219,3 +219,4 @@ __marimo__/
 20*/*
 *.csv
 config.ini
+.vscode/launch.json

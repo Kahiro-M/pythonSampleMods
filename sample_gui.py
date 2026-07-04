@@ -32,6 +32,27 @@ def _get_launcher_dir() -> str:
 SCRIPT_PATH = os.path.join(_get_launcher_dir(), f"{PROGRAM_FILE_NAME}.py")
 
 # -----------------------------------------------------------------------
+# print() の出力を GUI ログに転送するラッパー
+# -----------------------------------------------------------------------
+class _GuiWriter:
+    def __init__(self, log_fn, file_path=None):
+        self._log = log_fn
+        self._file = open(file_path, "w", encoding="utf-8", buffering=1) if file_path else None
+    def write(self, text):
+        if text:
+            self._log(text)
+            if self._file:
+                self._file.write(text)
+    def flush(self):
+        if self._file:
+            self._file.flush()
+    def close(self):
+        if self._file:
+            self._file.close()
+    def __getattr__(self, name):
+        return getattr(sys.__stdout__, name)
+
+# -----------------------------------------------------------------------
 # 定数
 # -----------------------------------------------------------------------
 CONFIG_PATH = os.path.join(_get_launcher_dir(), CONFIG_DEFAULT)
@@ -230,67 +251,45 @@ class mainGUI(tk.Tk):
         self._log("実行開始...\n")
 
         # 別スレッドで実行（GUIフリーズ防止）
-        thread = threading.Thread(target=self._run_script, daemon=True)
+        thread = threading.Thread(target=self._do, daemon=True)
         thread.start()
 
-    def _run_script(self):
-        import platform
-        from sample import main
-        cmd = self._build_command()
-        self._log(f"コマンド: {' '.join(cmd)}\n{'─'*60}\n")
+    def _do(self):
+        from pathlib import Path
+        from mkdir_datetime import mkdir_dt
+        from sample import do
 
-        extra = {}
-        if platform.system() == "Windows":
-            extra["creationflags"] = subprocess.CREATE_NO_WINDOW
+        args = self._build_args()
 
-        # 標準出力を一時的にGUIのログ関数にリダイレクト
-        old_stdout = sys.stdout
-        sys.stdout = GuiStdout(self._log)
+        if args['debug']:
+            dbg_dir_path = Path(mkdir_dt())  # デバッグ用にフォルダ作成
+            log_path = dbg_dir_path / (Path(args['output']).stem + "_debug.log")
+        else:
+            dbg_dir_path = None
+            log_path = None
+
+        # ラッパー差し替え前の標準出力を退避
+        _orig_stdout = sys.stdout
+        sys.stdout = _GuiWriter(self._log,file_path=log_path)
 
         try:
-            ret = main()
-            print(ret)
-
-        except FileNotFoundError:
-            self._log(f"\n❌ スクリプトが見つかりません: {SCRIPT_PATH}\n")
+            do(args)
         except Exception as e:
-            self._log(f"\n❌ 予期しないエラー: {e}\n")
+            self._log(f"\n❌ エラーが発生しました: {e}\n")
         finally:
-            # 標準出力を元に戻す
-            sys.stdout = old_stdout
-            # ボタンをメインスレッドで再有効化
+            # 退避していたラッパー差し替え前の標準出力を戻す
+            sys.stdout = _orig_stdout
             self.after(0, lambda: self.btn_run.config(state="normal"))
 
-    # コマンド構築
-    def _build_command(self) -> list[str]:
-        base_dir = _get_launcher_dir()
-        # {PROGRAM_FILE_NAME}.exe → {PROGRAM_FILE_NAME}.py の順で探す
-        exe_path = os.path.join(base_dir, f"{PROGRAM_FILE_NAME}.exe")
-        py_path  = os.path.join(base_dir, f"{PROGRAM_FILE_NAME}.py")
-
-        if os.path.exists(exe_path):
-            cmd = [exe_path]
-        elif os.path.exists(py_path):
-            cmd = [sys.executable, py_path]
-        else:
-            raise FileNotFoundError(f"{PROGRAM_FILE_NAME} が見つかりません: {base_dir}")
-
+    # 関数呼び出しの引数構築
+    def _build_args(self) -> list[str]:
+        args = {}
         for opt in OPTION_DEFS:
             name = opt["name"]
             var  = self._vars[name]
+            args[name] = var.get()
 
-            if opt["store_true"] or opt["type"] == bool:
-                if var.get():
-                    cmd.append(f"--{name}")
-                else:
-                    cmd.append(f"--no-{name}")
-            else:
-                value = var.get()
-                # 空・None・デフォルト値でも渡す（required対応）
-                if value is not None and str(value) != "":
-                    cmd += [f"--{name}", str(value)]
-
-        return cmd
+        return args
 
     # -------------------------------------------------------------------
     # ログ操作
