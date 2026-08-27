@@ -8,7 +8,7 @@ import os
 # ──────────────
 # オプション定義
 # ──────────────
-from external_define import OPTION_DEFS, CONFIG_DEFAULT, FILE_KEYWORDS, PROGRAM_TITLE, PROGRAM_FILE_NAME
+from external_define import OPTION_DEFS, CONFIG_DEFAULT, FILE_KEYWORDS, CSV_FILE_KEYWORDS, IMG_FILE_KEYWORDS, TXT_FILE_KEYWORDS, DIR_FILE_KEYWORDS, PROGRAM_TITLE, PROGRAM_FILE_NAME
 
 
 # -----------------------------------------------------------------------
@@ -214,15 +214,22 @@ class mainGUI(tk.Tk):
     def _browse_file(self, name: str):
         var = self._vars[name]
 
-        if name == "output":
+        if name in CSV_FILE_KEYWORDS:
             path = filedialog.asksaveasfilename(
-                title="出力ファイルを指定",
+                title="csvファイルを指定",
                 defaultextension=".csv",
                 filetypes=[("カンマ区切りデータ", "*.csv"), ("すべて", "*.*")])
-        elif "img" in name or "image" in name:
+        elif name in IMG_FILE_KEYWORDS:
             path = filedialog.askopenfilename(
                 title="画像ファイルを選択",
                 filetypes=[("画像", "*.png *.jpg *.jpeg"), ("すべて", "*.*")])
+        elif name in TXT_FILE_KEYWORDS:
+            path = filedialog.askopenfilename(
+                title="テキストファイルを選択",
+                filetypes=[("テキスト", "*.txt"), ("すべて", "*.*")])
+        elif name in DIR_FILE_KEYWORDS:
+            path = filedialog.askdirectory(
+                title="ディレクトリを選択")
         else:
             path = filedialog.askopenfilename(
                 title=f"{name} を選択",
