@@ -160,4 +160,14 @@ def build_parser(desc=ARG_DESCRIPTION) -> argparse.ArgumentParser:
 
 
 if __name__ == '__main__':
+    if getattr(sys, "frozen", False):
+        # PyInstallerでexe化した場合
+        app_dir = Path(sys.executable).resolve().parent
+    else:
+        # Pythonスクリプトとして実行した場合
+        app_dir = Path(__file__).resolve().parent
+
+    os.chdir(app_dir)
+    print("作業フォルダー:", Path.cwd())
+
     main()

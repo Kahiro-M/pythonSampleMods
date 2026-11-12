@@ -4,6 +4,7 @@ import subprocess
 import sys
 import threading
 import os
+from pathlib import Path
 
 # ──────────────
 # オプション定義
@@ -256,47 +257,79 @@ class mainGUI(tk.Tk):
         self.btn_run.config(state="disabled")
         self._log_clear()
         self._log("実行開始...\n")
+        # 現在フォルダ確認
+        self._log(f"作業フォルダー: {Path.cwd()}\n")
 
         # 別スレッドで実行（GUIフリーズ防止）
-        thread = threading.Thread(target=self._do, daemon=True)
+        thread = threading.Thread(target=self._run_script, daemon=True)
         thread.start()
 
-    def _do(self):
-        from pathlib import Path
-        from mkdir_datetime import mkdir_dt
-        from sample import do
+    # コマンド構築
+    def _build_command(self) -> list[str]:
+        base_dir = _get_launcher_dir()
+        # .exe → .py の順で探す
+        exe_path = os.path.join(base_dir, f"{PROGRAM_FILE_NAME}.exe")
+        py_path  = os.path.join(base_dir, f"{PROGRAM_FILE_NAME}.py")
 
-        args = self._build_args()
-
-        if args['debug']:
-            dbg_dir_path = Path(mkdir_dt())  # デバッグ用にフォルダ作成
-            log_path = dbg_dir_path / (Path(args['output']).stem + "_debug.log")
+        if os.path.exists(exe_path):
+            cmd = [exe_path]
+        elif os.path.exists(py_path):
+            cmd = [sys.executable, py_path]
         else:
-            dbg_dir_path = None
-            log_path = None
+            raise FileNotFoundError(f"{PROGRAM_FILE_NAME} が見つかりません: {base_dir}")
 
-        # ラッパー差し替え前の標準出力を退避
-        _orig_stdout = sys.stdout
-        sys.stdout = _GuiWriter(self._log,file_path=log_path)
-
-        try:
-            do(args)
-        except Exception as e:
-            self._log(f"\n❌ エラーが発生しました: {e}\n")
-        finally:
-            # 退避していたラッパー差し替え前の標準出力を戻す
-            sys.stdout = _orig_stdout
-            self.after(0, lambda: self.btn_run.config(state="normal"))
-
-    # 関数呼び出しの引数構築
-    def _build_args(self) -> list[str]:
-        args = {}
         for opt in OPTION_DEFS:
             name = opt["name"]
             var  = self._vars[name]
-            args[name] = var.get()
 
-        return args
+            if opt["store_true"] or opt["type"] == bool:
+                if var.get():
+                    cmd.append(f"--{name}")
+                else:
+                    cmd.append(f"--no-{name}")
+            else:
+                value = var.get()
+                # 空・None・デフォルト値でも渡す（required対応）
+                if value is not None and str(value) != "":
+                    cmd += [f"--{name}", str(value)]
+
+        return cmd
+
+    def _run_script(self):
+        import platform
+        cmd = self._build_command()
+        self._log(f"コマンド: {' '.join(cmd)}\n{'─'*60}\n")
+
+        extra = {}
+        if platform.system() == "Windows":
+            extra["creationflags"] = subprocess.CREATE_NO_WINDOW
+
+        try:
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE, # 標準出力をパイプで受け取る
+                stderr=subprocess.STDOUT, # 標準エラーも標準出力にまとめる
+                bufsize=0, # バイナリ受け取り
+                env={**os.environ, "PYTHONUNBUFFERED": "1"}, # バッファリング無効化
+                **extra, # Windowsでコンソールウィンドウを表示しないオプション
+            )
+            for raw_line in proc.stdout:
+                line = _decode_auto(raw_line)
+                self._log(line)
+            proc.wait()
+
+            if proc.returncode == 0:
+                self._log(f"\n{'─'*60}\n✅ 完了しました。\n出力: {self._vars['output'].get()}\n")
+            else:
+                self._log(f"\n{'─'*60}\n❌ エラーで終了しました（終了コード: {proc.returncode}）\n")
+
+        except FileNotFoundError:
+            self._log(f"\n❌ スクリプトが見つかりません: {SCRIPT_PATH}\n")
+        except Exception as e:
+            self._log(f"\n❌ 予期しないエラー: {e}\n")
+        finally:
+            # ボタンをメインスレッドで再有効化
+            self.after(0, lambda: self.btn_run.config(state="normal"))
 
     # -------------------------------------------------------------------
     # ログ操作
